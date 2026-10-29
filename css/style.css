@@ -1412,35 +1412,83 @@ body {
   background: rgba(129, 182, 76, 0.2);
 }
 
-/* Starting Rating Chips */
-.elo-chips {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.35rem;
+/* Multi-step Auth Container */
+.auth-step {
+  display: none;
+  flex-direction: column;
+  gap: 0.9rem;
 }
 
-.elo-chip {
+.auth-step.active {
+  display: flex;
+}
+
+/* Skill Experience Level Cards (Zero Elo numbers shown) */
+.skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.skill-card {
   background: #181715;
-  border: 1px solid var(--border-color);
-  color: var(--text-main);
-  padding: 0.4rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.skill-card:hover {
+  border-color: var(--accent-green);
+  background: #201e1a;
+  transform: translateY(-1px);
+}
+
+.skill-card.selected {
+  border-color: var(--accent-green);
+  background: rgba(129, 182, 76, 0.14);
+}
+
+.skill-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.skill-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.skill-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.skill-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.provisional-badge-note {
+  background: rgba(241, 179, 59, 0.12);
+  border: 1px solid rgba(241, 179, 59, 0.3);
+  color: var(--accent-yellow);
+  padding: 0.55rem 0.8rem;
   border-radius: 6px;
   font-size: 0.78rem;
-  font-weight: 700;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  line-height: 1.4;
 }
 
-.elo-chip:hover {
-  color: #fff;
-  border-color: var(--text-muted);
-}
-
-.elo-chip.selected {
-  background: var(--accent-green);
-  border-color: var(--accent-green);
-  color: #fff;
+.auth-step-buttons {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
 }
 
 /* Auth Error Alert */

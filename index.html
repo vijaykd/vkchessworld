@@ -345,64 +345,106 @@
         <p class="auth-subtitle">Create your chess account to play and track your rating</p>
       </div>
 
-      <!-- Auth Switcher Tabs -->
-      <div class="auth-tabs">
-        <button class="auth-tab-btn active" id="tab-signup" type="button">Create Account</button>
-        <button class="auth-tab-btn" id="tab-login" type="button">Log In</button>
+      <!-- Step 1: Username & Password & Avatar -->
+      <div class="auth-step active" id="auth-step-credentials">
+        <!-- Auth Switcher Tabs -->
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" id="tab-signup" type="button">Create Account</button>
+          <button class="auth-tab-btn" id="tab-login" type="button">Log In</button>
+        </div>
+
+        <form class="auth-form" id="auth-form-step1" onsubmit="event.preventDefault(); window.chessApp.handleStep1Submit();">
+          <!-- Username -->
+          <div class="auth-input-group">
+            <label for="auth-username">Username</label>
+            <input type="text" id="auth-username" class="auth-input" placeholder="e.g. GrandmasterViha" autocomplete="username" required minlength="2" maxlength="20">
+          </div>
+
+          <!-- Password -->
+          <div class="auth-input-group">
+            <label for="auth-password">Password</label>
+            <input type="password" id="auth-password" class="auth-input" placeholder="Enter your password" autocomplete="current-password" required minlength="3">
+          </div>
+
+          <!-- Avatar Selection (Signup only) -->
+          <div class="auth-input-group" id="group-avatar">
+            <label class="avatar-selection-label">Choose Avatar</label>
+            <div class="avatar-grid" id="avatar-grid">
+              <div class="avatar-choice selected" data-avatar="👑">👑</div>
+              <div class="avatar-choice" data-avatar="🐐">🐐</div>
+              <div class="avatar-choice" data-avatar="⚡">⚡</div>
+              <div class="avatar-choice" data-avatar="🦁">🦁</div>
+              <div class="avatar-choice" data-avatar="🐺">🐺</div>
+              <div class="avatar-choice" data-avatar="🦅">🦅</div>
+              <div class="avatar-choice" data-avatar="🧙‍♂️">🧙‍♂️</div>
+              <div class="avatar-choice" data-avatar="🐉">🐉</div>
+              <div class="avatar-choice" data-avatar="⚔️">⚔️</div>
+              <div class="avatar-choice" data-avatar="🛡️">🛡️</div>
+              <div class="avatar-choice" data-avatar="♟️">♟️</div>
+              <div class="avatar-choice" data-avatar="🎯">🎯</div>
+            </div>
+          </div>
+
+          <!-- Error Message -->
+          <div class="auth-error" id="auth-error-msg"></div>
+
+          <!-- Step 1 Action Button -->
+          <button type="submit" class="btn-auth-submit" id="btn-auth-submit">
+            <span>Continue</span> ➡️
+          </button>
+        </form>
       </div>
 
-      <!-- Auth Form -->
-      <form class="auth-form" id="auth-form" onsubmit="event.preventDefault(); window.chessApp.handleAuthSubmit();">
-        <!-- Username -->
-        <div class="auth-input-group">
-          <label for="auth-username">Username</label>
-          <input type="text" id="auth-username" class="auth-input" placeholder="e.g. GrandmasterViha" autocomplete="username" required minlength="2" maxlength="20">
+      <!-- Step 2: Skill Assessment (Appears after putting in username & password - No rating numbers shown!) -->
+      <div class="auth-step" id="auth-step-skill">
+        <div style="text-align: center; margin-bottom: 0.2rem;">
+          <h3 style="color: #fff; font-size: 1.15rem;">How well do you know chess?</h3>
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 3px;">Select your experience (ratings are earned through real play):</p>
         </div>
 
-        <!-- Password -->
-        <div class="auth-input-group">
-          <label for="auth-password">Password</label>
-          <input type="password" id="auth-password" class="auth-input" placeholder="Enter your password" autocomplete="current-password" required minlength="3">
-        </div>
+        <div class="skill-list" id="skill-list">
+          <div class="skill-card selected" data-level="new">
+            <span class="skill-icon">🐣</span>
+            <div class="skill-info">
+              <span class="skill-title">Brand New to Chess</span>
+              <span class="skill-desc">I am just learning how the pieces move and basic rules.</span>
+            </div>
+          </div>
 
-        <!-- Avatar Selection (Signup only) -->
-        <div class="auth-input-group" id="group-avatar">
-          <label class="avatar-selection-label">Choose Avatar</label>
-          <div class="avatar-grid" id="avatar-grid">
-            <div class="avatar-choice selected" data-avatar="👑">👑</div>
-            <div class="avatar-choice" data-avatar="🐐">🐐</div>
-            <div class="avatar-choice" data-avatar="⚡">⚡</div>
-            <div class="avatar-choice" data-avatar="🦁">🦁</div>
-            <div class="avatar-choice" data-avatar="🐺">🐺</div>
-            <div class="avatar-choice" data-avatar="🦅">🦅</div>
-            <div class="avatar-choice" data-avatar="🧙‍♂️">🧙‍♂️</div>
-            <div class="avatar-choice" data-avatar="🐉">🐉</div>
-            <div class="avatar-choice" data-avatar="⚔️">⚔️</div>
-            <div class="avatar-choice" data-avatar="🛡️">🛡️</div>
-            <div class="avatar-choice" data-avatar="♟️">♟️</div>
-            <div class="avatar-choice" data-avatar="🎯">🎯</div>
+          <div class="skill-card" data-level="beginner">
+            <span class="skill-icon">♟️</span>
+            <div class="skill-info">
+              <span class="skill-title">Beginner</span>
+              <span class="skill-desc">I know the basic rules and enjoy playing casual games.</span>
+            </div>
+          </div>
+
+          <div class="skill-card" data-level="intermediate">
+            <span class="skill-icon">⚔️</span>
+            <div class="skill-info">
+              <span class="skill-title">Intermediate</span>
+              <span class="skill-desc">I understand tactical ideas like pins, forks, and openings.</span>
+            </div>
+          </div>
+
+          <div class="skill-card" data-level="experienced">
+            <span class="skill-icon">🏆</span>
+            <div class="skill-info">
+              <span class="skill-title">Experienced</span>
+              <span class="skill-desc">I play serious games and have good tactical and endgame depth.</span>
+            </div>
           </div>
         </div>
 
-        <!-- Starting Rating Selection (Signup only) -->
-        <div class="auth-input-group" id="group-rating">
-          <label class="avatar-selection-label">Your Chess Skill Level</label>
-          <div class="elo-chips" id="elo-chips">
-            <div class="elo-chip" data-rating="800">Beginner (800)</div>
-            <div class="elo-chip selected" data-rating="1200">Casual (1200)</div>
-            <div class="elo-chip" data-rating="1600">Intermediate (1600)</div>
-            <div class="elo-chip" data-rating="2000">Master (2000)</div>
-          </div>
+        <div class="provisional-badge-note">
+          🛡️ <strong>Fair Play Notice:</strong> Ratings cannot be manually set to high numbers. Your rating starts as <em>Provisional (?)</em> and is earned by winning matches against bots and solving puzzles!
         </div>
 
-        <!-- Error Message -->
-        <div class="auth-error" id="auth-error-msg"></div>
-
-        <!-- Submit Button -->
-        <button type="submit" class="btn-auth-submit" id="btn-auth-submit">
-          <span>Create Account & Play</span> ♟️
-        </button>
-      </form>
+        <div class="auth-step-buttons">
+          <button type="button" class="btn-action" id="btn-skill-back" style="flex: 1;">⬅️ Back</button>
+          <button type="button" class="btn-action btn-primary" id="btn-skill-finish" style="flex: 2;">Start Playing 👑</button>
+        </div>
+      </div>
 
       <div class="auth-footer">
         VK Chess World &bull; Play like on Chess.com & Lichess

@@ -42,7 +42,7 @@ class ChessApp {
     this.currentUser = null;
     this.authMode = 'signup'; // 'signup' or 'login'
     this.selectedAvatar = '👑';
-    this.selectedRating = 1200;
+    this.selectedSkillLevel = 'new'; // Zero rating numbers shown
 
     this.initDOM();
     this.bindEvents();
@@ -109,13 +109,23 @@ class ChessApp {
       });
     });
 
-    // Elo Chips
-    document.querySelectorAll('.elo-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        document.querySelectorAll('.elo-chip').forEach(c => c.classList.remove('selected'));
-        chip.classList.add('selected');
-        this.selectedRating = parseInt(chip.dataset.rating, 10);
+    // Skill Assessment Cards (Zero Elo numbers shown)
+    document.querySelectorAll('.skill-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.skill-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        this.selectedSkillLevel = card.dataset.level;
       });
+    });
+
+    // Skill Back & Finish Buttons
+    document.getElementById('btn-skill-back')?.addEventListener('click', () => {
+      document.getElementById('auth-step-skill')?.classList.remove('active');
+      document.getElementById('auth-step-credentials')?.classList.add('active');
+    });
+
+    document.getElementById('btn-skill-finish')?.addEventListener('click', () => {
+      this.handleSkillFinish();
     });
 
     // Mode Switcher Tabs
@@ -309,24 +319,26 @@ class ChessApp {
     const tabSignup = document.getElementById('tab-signup');
     const tabLogin = document.getElementById('tab-login');
     const groupAvatar = document.getElementById('group-avatar');
-    const groupRating = document.getElementById('group-rating');
+
+    // Ensure Step 1 is visible
+    document.getElementById('auth-step-credentials')?.classList.add('active');
+    document.getElementById('auth-step-skill')?.classList.remove('active');
+    this.authErrorEl.classList.remove('show');
 
     if (mode === 'signup') {
       tabSignup?.classList.add('active');
       tabLogin?.classList.remove('active');
       if (groupAvatar) groupAvatar.style.display = 'flex';
-      if (groupRating) groupRating.style.display = 'flex';
-      this.btnAuthSubmit.innerHTML = '<span>Create Account & Play</span> ♟️';
+      this.btnAuthSubmit.innerHTML = '<span>Continue</span> ➡️';
     } else {
       tabSignup?.classList.remove('active');
       tabLogin?.classList.add('active');
       if (groupAvatar) groupAvatar.style.display = 'none';
-      if (groupRating) groupRating.style.display = 'none';
       this.btnAuthSubmit.innerHTML = '<span>Log In & Play</span> ♟️';
     }
   }
 
-  handleAuthSubmit() {
+  handleStep1Submit() {
     const username = this.authUsernameEl.value.trim();
     const password = this.authPasswordEl.value.trim();
 
@@ -348,21 +360,16 @@ class ChessApp {
         return;
       }
 
-      const accountData = {
+      // Store pending credentials and move to step 2 (Experience Level Assessment)
+      this.pendingSignup = {
         username: username,
         password: password,
-        avatar: this.selectedAvatar || '👑',
-        rating: this.selectedRating || 1200,
-        createdAt: Date.now()
+        avatar: this.selectedAvatar || '👑'
       };
 
-      localStorage.setItem(key, JSON.stringify(accountData));
-      this.currentUser = {
-        username: accountData.username,
-        avatar: accountData.avatar,
-        rating: accountData.rating
-      };
-      localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+      this.authErrorEl.classList.remove('show');
+      document.getElementById('auth-step-credentials')?.classList.remove('active');
+      document.getElementById('auth-step-skill')?.classList.add('active');
     } else {
       // Login mode
       const existing = localStorage.getItem(key);
@@ -380,14 +387,107 @@ class ChessApp {
       this.currentUser = {
         username: account.username,
         avatar: account.avatar || '👑',
-        rating: account.rating || 1200
+        rating: account.rating || 400,
+        isProvisional: account.isProvisional !== false,
+        gamesPlayed: account.gamesPlayed || 0
       };
       localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+
+      this.authErrorEl.classList.remove('show');
+      this.authModalEl.classList.remove('show');
+      this.updateUserProfileUI();
+      this.updatePlayerCards();
+    }
+  }
+
+  handleSkillFinish() {
+    if (!this.pendingSignup) return;
+
+    // Baseline placement ratings (zero numbers are shown to users to prevent gaming the system)
+    const baseRatings = {
+      new: 400,
+      beginner: 700,
+      intermediate: 1000,
+      experienced: 1200
+    };
+
+    const assignedRating = baseRatings[this.selectedSkillLevel] || 400;
+
+    const accountData = {
+      username: this.pendingSignup.username,
+      password: this.pendingSignup.password,
+      avatar: this.pendingSignup.avatar,
+      rating: assignedRating,
+      isProvisional: true,
+      gamesPlayed: 0,
+      createdAt: Date.now()
+    };
+
+    const key = 'vk_chess_acc_' + accountData.username.toLowerCase();
+    localStorage.setItem(key, JSON.stringify(accountData));
+
+    this.currentUser = {
+      username: accountData.username,
+      avatar: accountData.avatar,
+      rating: accountData.rating,
+      isProvisional: true,
+      gamesPlayed: 0
+    };
+    localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+
+    this.authModalEl.classList.remove('show');
+    this.updateUserProfileUI();
+    this.updatePlayerCards();
+  }
+
+  adjustUserRating(isWin, isDraw = false) {
+    if (!this.currentUser || this.mode !== 'bot') return 0;
+
+    const userRating = this.currentUser.rating || 400;
+    const botRating = this.selectedBot.rating || 1500;
+    const isProvisional = this.currentUser.isProvisional !== false;
+    const K = isProvisional ? 40 : 20;
+
+    const expected = 1 / (1 + Math.pow(10, (botRating - userRating) / 400));
+    const score = isWin ? 1 : (isDraw ? 0.5 : 0);
+    const delta = Math.round(K * (score - expected));
+
+    this.currentUser.rating = Math.max(100, userRating + delta);
+    this.currentUser.gamesPlayed = (this.currentUser.gamesPlayed || 0) + 1;
+    if (this.currentUser.gamesPlayed >= 5) {
+      this.currentUser.isProvisional = false;
     }
 
-    // Success
-    this.authErrorEl.classList.remove('show');
-    this.authModalEl.classList.remove('show');
+    localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+    const key = 'vk_chess_acc_' + this.currentUser.username.toLowerCase();
+    const accStr = localStorage.getItem(key);
+    if (accStr) {
+      const acc = JSON.parse(accStr);
+      acc.rating = this.currentUser.rating;
+      acc.gamesPlayed = this.currentUser.gamesPlayed;
+      acc.isProvisional = this.currentUser.isProvisional;
+      localStorage.setItem(key, JSON.stringify(acc));
+    }
+
+    this.updateUserProfileUI();
+    this.updatePlayerCards();
+    return delta;
+  }
+
+  adjustPuzzleRating(success) {
+    if (!this.currentUser) return;
+    const delta = success ? 12 : -6;
+    this.currentUser.rating = Math.max(100, (this.currentUser.rating || 400) + delta);
+    localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+
+    const key = 'vk_chess_acc_' + this.currentUser.username.toLowerCase();
+    const accStr = localStorage.getItem(key);
+    if (accStr) {
+      const acc = JSON.parse(accStr);
+      acc.rating = this.currentUser.rating;
+      localStorage.setItem(key, JSON.stringify(acc));
+    }
+
     this.updateUserProfileUI();
     this.updatePlayerCards();
   }
@@ -399,9 +499,10 @@ class ChessApp {
 
   updateUserProfileUI() {
     if (!this.currentUser) return;
+    const displayRating = (this.currentUser.rating || 400) + (this.currentUser.isProvisional ? '?' : '');
     if (this.navUserAvatarEl) this.navUserAvatarEl.textContent = this.currentUser.avatar || '👑';
     if (this.navUserNameEl) this.navUserNameEl.textContent = this.currentUser.username;
-    if (this.navUserEloEl) this.navUserEloEl.textContent = this.currentUser.rating || 1200;
+    if (this.navUserEloEl) this.navUserEloEl.textContent = displayRating;
   }
 
   logout() {
@@ -1038,8 +1139,17 @@ class ChessApp {
   }
 
   showGameOverModal(title, result) {
+    let ratingNote = '';
+    if (this.currentUser && this.mode === 'bot') {
+      const isWin = (result === '1-0' && this.userColor === 'w') || (result === '0-1' && this.userColor === 'b');
+      const isDraw = result === '1/2-1/2';
+      const delta = this.adjustUserRating(isWin, isDraw);
+      const sign = delta >= 0 ? '+' : '';
+      ratingNote = ` • Rating: ${this.currentUser.rating} (${sign}${delta})`;
+    }
+
     document.getElementById('game-over-title').textContent = title;
-    document.getElementById('game-over-desc').textContent = `Final score: ${result}`;
+    document.getElementById('game-over-desc').textContent = `Final score: ${result}${ratingNote}`;
     document.getElementById('gameover-modal').classList.add('show');
   }
 
@@ -1084,16 +1194,18 @@ class ChessApp {
       this.puzzleStep++;
       if (this.puzzleStep >= puzzle.solution.length) {
         this.puzzleStreak++;
+        this.adjustPuzzleRating(true);
         fb.className = 'puzzle-feedback success';
-        fb.textContent = '🎉 Brilliant! Puzzle Solved! (+15 rating)';
+        fb.textContent = `🎉 Brilliant! Puzzle Solved! (+12 rating, now ${this.currentUser ? this.currentUser.rating : ''})`;
         this.sound.playGameEnd(true);
       } else {
         fb.className = 'puzzle-feedback success';
         fb.textContent = 'Correct! Keep going...';
       }
     } else {
+      this.adjustPuzzleRating(false);
       fb.className = 'puzzle-feedback error';
-      fb.textContent = 'Incorrect move! Try again.';
+      fb.textContent = `Incorrect move! (-6 rating, now ${this.currentUser ? this.currentUser.rating : ''})`;
       setTimeout(() => {
         this.engine.undoMove();
         this.renderBoard();
