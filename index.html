@@ -39,6 +39,14 @@
 
       <!-- Sound Mute Toggle -->
       <button id="btn-mute" class="icon-btn" title="Toggle Sound">🔊</button>
+
+      <!-- User Profile Badge -->
+      <div class="user-profile-badge" id="nav-user-badge" title="Click to view profile or switch account">
+        <span class="user-avatar-mini" id="nav-user-avatar">👤</span>
+        <span class="user-name-text" id="nav-user-name">Player</span>
+        <span class="user-elo-badge" id="nav-user-elo">1500</span>
+        <button id="btn-logout" class="icon-btn-mini" title="Log Out / Switch Account">🚪</button>
+      </div>
     </div>
   </header>
 
@@ -324,6 +332,80 @@
       <div class="game-over-actions">
         <button class="btn-action btn-primary" style="flex: 1;" onclick="document.getElementById('gameover-modal').classList.remove('show'); window.chessApp.startNewGame();">Play Again 🔄</button>
         <button class="btn-action" style="flex: 1;" onclick="document.getElementById('gameover-modal').classList.remove('show'); window.chessApp.switchMode('review');">Game Review 📊</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Welcome & Authentication Modal (Username & Password) -->
+  <div class="auth-backdrop" id="auth-modal">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-brand-logo">👑</div>
+        <h2 class="auth-title">Welcome to VK Chess World</h2>
+        <p class="auth-subtitle">Create your chess account to play and track your rating</p>
+      </div>
+
+      <!-- Auth Switcher Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tab-signup" type="button">Create Account</button>
+        <button class="auth-tab-btn" id="tab-login" type="button">Log In</button>
+      </div>
+
+      <!-- Auth Form -->
+      <form class="auth-form" id="auth-form" onsubmit="event.preventDefault(); window.chessApp.handleAuthSubmit();">
+        <!-- Username -->
+        <div class="auth-input-group">
+          <label for="auth-username">Username</label>
+          <input type="text" id="auth-username" class="auth-input" placeholder="e.g. GrandmasterViha" autocomplete="username" required minlength="2" maxlength="20">
+        </div>
+
+        <!-- Password -->
+        <div class="auth-input-group">
+          <label for="auth-password">Password</label>
+          <input type="password" id="auth-password" class="auth-input" placeholder="Enter your password" autocomplete="current-password" required minlength="3">
+        </div>
+
+        <!-- Avatar Selection (Signup only) -->
+        <div class="auth-input-group" id="group-avatar">
+          <label class="avatar-selection-label">Choose Avatar</label>
+          <div class="avatar-grid" id="avatar-grid">
+            <div class="avatar-choice selected" data-avatar="👑">👑</div>
+            <div class="avatar-choice" data-avatar="🐐">🐐</div>
+            <div class="avatar-choice" data-avatar="⚡">⚡</div>
+            <div class="avatar-choice" data-avatar="🦁">🦁</div>
+            <div class="avatar-choice" data-avatar="🐺">🐺</div>
+            <div class="avatar-choice" data-avatar="🦅">🦅</div>
+            <div class="avatar-choice" data-avatar="🧙‍♂️">🧙‍♂️</div>
+            <div class="avatar-choice" data-avatar="🐉">🐉</div>
+            <div class="avatar-choice" data-avatar="⚔️">⚔️</div>
+            <div class="avatar-choice" data-avatar="🛡️">🛡️</div>
+            <div class="avatar-choice" data-avatar="♟️">♟️</div>
+            <div class="avatar-choice" data-avatar="🎯">🎯</div>
+          </div>
+        </div>
+
+        <!-- Starting Rating Selection (Signup only) -->
+        <div class="auth-input-group" id="group-rating">
+          <label class="avatar-selection-label">Your Chess Skill Level</label>
+          <div class="elo-chips" id="elo-chips">
+            <div class="elo-chip" data-rating="800">Beginner (800)</div>
+            <div class="elo-chip selected" data-rating="1200">Casual (1200)</div>
+            <div class="elo-chip" data-rating="1600">Intermediate (1600)</div>
+            <div class="elo-chip" data-rating="2000">Master (2000)</div>
+          </div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="auth-error" id="auth-error-msg"></div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn-auth-submit" id="btn-auth-submit">
+          <span>Create Account & Play</span> ♟️
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        VK Chess World &bull; Play like on Chess.com & Lichess
       </div>
     </div>
   </div>

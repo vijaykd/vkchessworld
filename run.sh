@@ -1,6 +1,6 @@
 #!/bin/bash
 # VK Chess World Launcher
-PORT=${1:-8080}
+PORT=${1:-8088}
 
 echo "============================================="
 echo "   👑 VK Chess World (Chess.com & Lichess)  "

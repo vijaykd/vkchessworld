@@ -38,8 +38,15 @@ class ChessApp {
     // Game Review Stats
     this.reviewData = null;
 
+    // User Account & Authentication State
+    this.currentUser = null;
+    this.authMode = 'signup'; // 'signup' or 'login'
+    this.selectedAvatar = '👑';
+    this.selectedRating = 1200;
+
     this.initDOM();
     this.bindEvents();
+    this.initAuth();
     this.startNewGame();
   }
 
@@ -69,9 +76,48 @@ class ChessApp {
     this.bottomNameEl = document.getElementById('bottom-player-name');
     this.bottomRatingEl = document.getElementById('bottom-player-rating');
     this.bottomAvatarEl = document.getElementById('bottom-player-avatar');
+
+    // Auth & User Profile DOM
+    this.authModalEl = document.getElementById('auth-modal');
+    this.authUsernameEl = document.getElementById('auth-username');
+    this.authPasswordEl = document.getElementById('auth-password');
+    this.authErrorEl = document.getElementById('auth-error-msg');
+    this.btnAuthSubmit = document.getElementById('btn-auth-submit');
+    this.navUserAvatarEl = document.getElementById('nav-user-avatar');
+    this.navUserNameEl = document.getElementById('nav-user-name');
+    this.navUserEloEl = document.getElementById('nav-user-elo');
   }
 
   bindEvents() {
+    // Auth Tabs & Controls
+    document.getElementById('tab-signup')?.addEventListener('click', () => this.setAuthMode('signup'));
+    document.getElementById('tab-login')?.addEventListener('click', () => this.setAuthMode('login'));
+    document.getElementById('btn-logout')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.logout();
+    });
+    document.getElementById('nav-user-badge')?.addEventListener('click', () => {
+      this.showAuthModal(false);
+    });
+
+    // Avatar Choices
+    document.querySelectorAll('.avatar-choice').forEach(choice => {
+      choice.addEventListener('click', () => {
+        document.querySelectorAll('.avatar-choice').forEach(c => c.classList.remove('selected'));
+        choice.classList.add('selected');
+        this.selectedAvatar = choice.dataset.avatar;
+      });
+    });
+
+    // Elo Chips
+    document.querySelectorAll('.elo-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.elo-chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        this.selectedRating = parseInt(chip.dataset.rating, 10);
+      });
+    });
+
     // Mode Switcher Tabs
     document.querySelectorAll('.nav-tab-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -232,41 +278,177 @@ class ChessApp {
     }
   }
 
+  // Authentication & User Account System
+  initAuth() {
+    const saved = localStorage.getItem('vk_chess_user');
+    if (saved) {
+      try {
+        this.currentUser = JSON.parse(saved);
+        this.updateUserProfileUI();
+      } catch (e) {
+        this.currentUser = null;
+      }
+    }
+
+    if (!this.currentUser) {
+      this.showAuthModal(true);
+    }
+  }
+
+  showAuthModal(isMandatory = true) {
+    this.authErrorEl.classList.remove('show');
+    this.authErrorEl.textContent = '';
+    this.authUsernameEl.value = this.currentUser ? this.currentUser.username : '';
+    this.authPasswordEl.value = '';
+    this.setAuthMode('signup');
+    this.authModalEl.classList.add('show');
+  }
+
+  setAuthMode(mode) {
+    this.authMode = mode;
+    const tabSignup = document.getElementById('tab-signup');
+    const tabLogin = document.getElementById('tab-login');
+    const groupAvatar = document.getElementById('group-avatar');
+    const groupRating = document.getElementById('group-rating');
+
+    if (mode === 'signup') {
+      tabSignup?.classList.add('active');
+      tabLogin?.classList.remove('active');
+      if (groupAvatar) groupAvatar.style.display = 'flex';
+      if (groupRating) groupRating.style.display = 'flex';
+      this.btnAuthSubmit.innerHTML = '<span>Create Account & Play</span> ♟️';
+    } else {
+      tabSignup?.classList.remove('active');
+      tabLogin?.classList.add('active');
+      if (groupAvatar) groupAvatar.style.display = 'none';
+      if (groupRating) groupRating.style.display = 'none';
+      this.btnAuthSubmit.innerHTML = '<span>Log In & Play</span> ♟️';
+    }
+  }
+
+  handleAuthSubmit() {
+    const username = this.authUsernameEl.value.trim();
+    const password = this.authPasswordEl.value.trim();
+
+    if (!username || username.length < 2) {
+      this.showAuthError('Username must be at least 2 characters long.');
+      return;
+    }
+    if (!password || password.length < 3) {
+      this.showAuthError('Password must be at least 3 characters long.');
+      return;
+    }
+
+    const key = 'vk_chess_acc_' + username.toLowerCase();
+
+    if (this.authMode === 'signup') {
+      const existing = localStorage.getItem(key);
+      if (existing) {
+        this.showAuthError('Username already taken! Please choose another or Log In.');
+        return;
+      }
+
+      const accountData = {
+        username: username,
+        password: password,
+        avatar: this.selectedAvatar || '👑',
+        rating: this.selectedRating || 1200,
+        createdAt: Date.now()
+      };
+
+      localStorage.setItem(key, JSON.stringify(accountData));
+      this.currentUser = {
+        username: accountData.username,
+        avatar: accountData.avatar,
+        rating: accountData.rating
+      };
+      localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+    } else {
+      // Login mode
+      const existing = localStorage.getItem(key);
+      if (!existing) {
+        this.showAuthError('Account not found! Please create an account first.');
+        return;
+      }
+
+      const account = JSON.parse(existing);
+      if (account.password !== password) {
+        this.showAuthError('Incorrect password! Please try again.');
+        return;
+      }
+
+      this.currentUser = {
+        username: account.username,
+        avatar: account.avatar || '👑',
+        rating: account.rating || 1200
+      };
+      localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+    }
+
+    // Success
+    this.authErrorEl.classList.remove('show');
+    this.authModalEl.classList.remove('show');
+    this.updateUserProfileUI();
+    this.updatePlayerCards();
+  }
+
+  showAuthError(msg) {
+    this.authErrorEl.textContent = msg;
+    this.authErrorEl.classList.add('show');
+  }
+
+  updateUserProfileUI() {
+    if (!this.currentUser) return;
+    if (this.navUserAvatarEl) this.navUserAvatarEl.textContent = this.currentUser.avatar || '👑';
+    if (this.navUserNameEl) this.navUserNameEl.textContent = this.currentUser.username;
+    if (this.navUserEloEl) this.navUserEloEl.textContent = this.currentUser.rating || 1200;
+  }
+
+  logout() {
+    localStorage.removeItem('vk_chess_user');
+    this.currentUser = null;
+    this.showAuthModal(true);
+  }
+
   updatePlayerCards() {
+    const userName = this.currentUser ? this.currentUser.username : 'You';
+    const userAvatar = this.currentUser ? this.currentUser.avatar : '👤';
+    const userRating = this.currentUser ? this.currentUser.rating : '1500';
+
     if (this.mode === 'bot') {
       if (this.userColor === 'w') {
         // Bottom is User, Top is Bot
-        this.bottomNameEl.textContent = 'You (Viha)';
-        this.bottomRatingEl.textContent = '1500';
-        this.bottomAvatarEl.textContent = '👤';
+        this.bottomNameEl.textContent = userName;
+        this.bottomRatingEl.textContent = userRating;
+        this.bottomAvatarEl.textContent = userAvatar;
 
         this.topNameEl.textContent = this.selectedBot.name;
         this.topRatingEl.textContent = this.selectedBot.rating;
         this.topAvatarEl.textContent = this.selectedBot.avatar;
       } else {
         // Bottom is Bot (White), Top is User (Black)
-        this.bottomNameEl.textContent = 'You (Viha)';
-        this.bottomRatingEl.textContent = '1500';
-        this.bottomAvatarEl.textContent = '👤';
+        this.bottomNameEl.textContent = userName;
+        this.bottomRatingEl.textContent = userRating;
+        this.bottomAvatarEl.textContent = userAvatar;
 
         this.topNameEl.textContent = this.selectedBot.name;
         this.topRatingEl.textContent = this.selectedBot.rating;
         this.topAvatarEl.textContent = this.selectedBot.avatar;
       }
     } else if (this.mode === 'pvp') {
-      this.bottomNameEl.textContent = this.flipped ? 'Black' : 'White';
+      this.bottomNameEl.textContent = this.flipped ? 'Black' : (userName || 'White');
       this.bottomRatingEl.textContent = 'Pass & Play';
-      this.bottomAvatarEl.textContent = this.flipped ? '♟️' : '♙';
+      this.bottomAvatarEl.textContent = this.flipped ? '♟️' : userAvatar;
 
-      this.topNameEl.textContent = this.flipped ? 'White' : 'Black';
+      this.topNameEl.textContent = this.flipped ? (userName || 'White') : 'Black';
       this.topRatingEl.textContent = 'Pass & Play';
-      this.topAvatarEl.textContent = this.flipped ? '♙' : '♟️';
+      this.topAvatarEl.textContent = this.flipped ? userAvatar : '♟️';
     } else if (this.mode === 'puzzles') {
-      this.bottomNameEl.textContent = 'Tactics Trainer';
+      this.bottomNameEl.textContent = userName;
       this.bottomRatingEl.textContent = `Streak: ${this.puzzleStreak}`;
-      this.bottomAvatarEl.textContent = '🧩';
+      this.bottomAvatarEl.textContent = userAvatar;
 
-      this.topNameEl.textContent = 'Puzzle Opponent';
+      this.topNameEl.textContent = 'Tactics Puzzle';
       this.topRatingEl.textContent = '';
       this.topAvatarEl.textContent = '🎯';
     }
