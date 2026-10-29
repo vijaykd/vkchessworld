@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VK Chess World - Play Chess Online</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>♟️</text></svg>">
+</head>
+<body data-board-theme="green">
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="logo-brand" onclick="window.chessApp.switchMode('bot')">
+      <span class="logo-icon">👑</span>
+      <span class="logo-text">VK CHESS</span>
+      <span class="logo-badge">WORLD</span>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <nav class="nav-modes">
+      <button class="nav-tab-btn active" data-mode="bot">🤖 Play Bot</button>
+      <button class="nav-tab-btn" data-mode="pvp">👥 2-Player</button>
+      <button class="nav-tab-btn" data-mode="puzzles">🧩 Puzzles</button>
+      <button class="nav-tab-btn" data-mode="analysis">🔍 Analysis</button>
+      <button class="nav-tab-btn" data-mode="review">📊 Game Review</button>
+    </nav>
+
+    <!-- Top Controls -->
+    <div class="nav-actions">
+      <!-- Theme Switcher -->
+      <select id="theme-select" class="icon-btn" style="width: auto; padding: 0 0.5rem; font-size: 0.8rem; font-weight: 600; cursor: pointer;">
+        <option value="green">Classic Green</option>
+        <option value="lichess">Lichess Blue</option>
+        <option value="wood">Walnut Wood</option>
+        <option value="dark">Carbon Dark</option>
+        <option value="neon">Cyber Neon</option>
+      </select>
+
+      <!-- Sound Mute Toggle -->
+      <button id="btn-mute" class="icon-btn" title="Toggle Sound">🔊</button>
+    </div>
+  </header>
+
+  <!-- Main App Layout Container -->
+  <main class="app-container">
+
+    <!-- Board Arena (Left Side) -->
+    <section class="board-arena">
+
+      <!-- Top Opponent Player Card -->
+      <div class="player-bar top-player">
+        <div class="player-info">
+          <div class="player-avatar" id="top-player-avatar">🐐</div>
+          <div class="player-meta">
+            <div class="player-name-row">
+              <span class="player-name" id="top-player-name">Coach Magnus</span>
+              <span class="player-rating" id="top-player-rating">2500</span>
+            </div>
+            <div class="captured-pieces">
+              <span id="top-captured"></span>
+              <span class="material-advantage" id="top-advantage"></span>
+            </div>
+          </div>
+        </div>
+        <div class="player-clock" id="black-clock">5:00</div>
+      </div>
+
+      <!-- Board Outer Wrapper (Eval Bar + 8x8 Board) -->
+      <div class="board-wrapper">
+        <!-- Live Evaluation Bar (Chess.com / Lichess Style) -->
+        <div class="eval-bar-container" title="Engine Evaluation">
+          <div class="eval-bar-white" id="eval-bar-white"></div>
+          <div class="eval-bar-black"></div>
+          <span class="eval-score-text score-white" id="eval-score-text">+0.0</span>
+        </div>
+
+        <!-- The 8x8 Chessboard Container -->
+        <div class="chessboard-container">
+          <div class="chessboard" id="chessboard">
+            <!-- 64 Squares dynamically rendered by js/app.js -->
+          </div>
+
+          <!-- Pawn Promotion Modal Overlay -->
+          <div class="promotion-overlay" id="promotion-overlay">
+            <div class="promotion-modal">
+              <div class="promotion-title">Promote Pawn</div>
+              <div class="promotion-choices" id="promo-choices">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom User Player Card -->
+      <div class="player-bar bottom-player">
+        <div class="player-info">
+          <div class="player-avatar" id="bottom-player-avatar">👤</div>
+          <div class="player-meta">
+            <div class="player-name-row">
+              <span class="player-name" id="bottom-player-name">You (Viha)</span>
+              <span class="player-rating" id="bottom-player-rating">1500</span>
+            </div>
+            <div class="captured-pieces">
+              <span id="bottom-captured"></span>
+              <span class="material-advantage" id="bottom-advantage"></span>
+            </div>
+          </div>
+        </div>
+        <div class="player-clock active" id="white-clock">5:00</div>
+      </div>
+
+    </section>
+
+    <!-- Sidebar / Right Controls Panel -->
+    <aside class="sidebar">
+
+      <!-- Sidebar Tabs -->
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="moves">♟️ Moves</button>
+        <button class="sidebar-tab" data-tab="bots">🤖 Bots</button>
+        <button class="sidebar-tab" data-tab="puzzles">🧩 Puzzles</button>
+        <button class="sidebar-tab" data-tab="review">📊 Review</button>
+        <button class="sidebar-tab" data-tab="share">💾 Export</button>
+      </div>
+
+      <!-- Tab 1: Moves & Live Controls -->
+      <div class="tab-content active" id="tab-moves">
+        <!-- Status Banner -->
+        <div class="game-status-banner">
+          <div>
+            <div class="status-title" id="status-title">White to move</div>
+            <div class="status-subtitle" id="status-subtitle">Move 1</div>
+          </div>
+        </div>
+
+        <!-- Move History Table -->
+        <div class="move-history-container">
+          <table class="move-table">
+            <tbody id="move-table-body">
+              <!-- Dynamically populated SAN moves -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Move Navigation Bar -->
+        <div class="move-nav-bar">
+          <button class="nav-btn" id="nav-first" title="First Move">|&lt;</button>
+          <button class="nav-btn" id="nav-prev" title="Previous Move">&lt;</button>
+          <button class="nav-btn" id="nav-next" title="Next Move">&gt;</button>
+          <button class="nav-btn" id="nav-last" title="Last Move">&gt;|</button>
+        </div>
+
+        <!-- Time Control Selector -->
+        <div class="time-control-selector">
+          <label>Time Control</label>
+          <div class="time-pills">
+            <button class="time-pill" data-seconds="60">1 min</button>
+            <button class="time-pill" data-seconds="180">3 min</button>
+            <button class="time-pill active" data-seconds="300">5 min</button>
+            <button class="time-pill" data-seconds="600">10 min</button>
+          </div>
+        </div>
+
+        <!-- Quick Action Buttons -->
+        <div class="game-actions-grid">
+          <button class="btn-action btn-primary" id="btn-new-game">🔄 New Game</button>
+          <button class="btn-action" id="btn-undo">↩️ Takeback</button>
+          <button class="btn-action" id="btn-flip">🔁 Flip Board</button>
+          <button class="btn-action btn-danger" id="btn-resign">🏳️ Resign</button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Bot Selector -->
+      <div class="tab-content" id="tab-bots">
+        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Choose Your Opponent</label>
+
+        <!-- Color Selection -->
+        <div class="color-select-row">
+          <button class="color-btn active" data-color="w">Play White ⚪</button>
+          <button class="color-btn" data-color="b">Play Black ⚫</button>
+        </div>
+
+        <div class="bot-selection-list">
+          <!-- Coach Magnus -->
+          <div class="bot-card selected" data-bot="magnus">
+            <div class="bot-info">
+              <div class="bot-avatar">🐐</div>
+              <div class="bot-meta">
+                <h4>Coach Magnus <span class="bot-rating-badge">2500</span></h4>
+                <p>Grandmaster engine with sharp positional play</p>
+                <div class="bot-quote">"Make the best move, punish mistakes."</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tactical Tina -->
+          <div class="bot-card" data-bot="tina">
+            <div class="bot-info">
+              <div class="bot-avatar">⚡</div>
+              <div class="bot-meta">
+                <h4>Tactical Tina <span class="bot-rating-badge">1750</span></h4>
+                <p>Loves forks, pins, and dynamic attacks</p>
+                <div class="bot-quote">"Watch your pieces closely!"</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Nelson -->
+          <div class="bot-card" data-bot="nelson">
+            <div class="bot-info">
+              <div class="bot-avatar">👑</div>
+              <div class="bot-meta">
+                <h4>Nelson <span class="bot-rating-badge">1300</span></h4>
+                <p>Aggressive early queen attack bot</p>
+                <div class="bot-quote">"My Queen comes out early!"</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Martin -->
+          <div class="bot-card" data-bot="martin">
+            <div class="bot-info">
+              <div class="bot-avatar">🤖</div>
+              <div class="bot-meta">
+                <h4>Martin <span class="bot-rating-badge">700</span></h4>
+                <p>Friendly beginner bot who occasionally blunders</p>
+                <div class="bot-quote">"I like moving pieces around!"</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Tactics & Puzzles -->
+      <div class="tab-content" id="tab-puzzles">
+        <div class="puzzle-card">
+          <div class="puzzle-header">
+            <span class="puzzle-rating" id="puzzle-rating">800 Elo</span>
+            <span id="puzzle-theme" style="font-weight: 700; color: var(--accent-green); font-size: 0.85rem;">Checkmate in 1</span>
+          </div>
+          <h3 id="puzzle-title" style="color: #fff; font-size: 1.1rem;">Scholar's Mate Punish</h3>
+          <p id="puzzle-desc" style="color: var(--text-muted); font-size: 0.85rem;">White to move. Find the best move!</p>
+
+          <div class="puzzle-feedback" id="puzzle-feedback"></div>
+
+          <div style="display: flex; gap: 0.6rem; margin-top: 0.6rem;">
+            <button class="btn-action btn-primary" id="btn-puzzle-next" style="flex: 2;">Next Puzzle ➡️</button>
+            <button class="btn-action" id="btn-puzzle-hint" style="flex: 1;">💡 Hint</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Game Review & Move Accuracy -->
+      <div class="tab-content" id="tab-review">
+        <div class="review-container">
+          <div class="review-scores">
+            <div class="score-box">
+              <h5>White Accuracy</h5>
+              <div class="score-percent" id="review-white-score">94.2%</div>
+            </div>
+            <div class="score-box">
+              <h5>Black Accuracy</h5>
+              <div class="score-percent" id="review-black-score">76.8%</div>
+            </div>
+          </div>
+
+          <div class="move-classifications">
+            <div class="class-row">
+              <span class="class-label"><span class="badge-brilliant">!!</span> Brilliant</span>
+              <span id="count-brilliant">1</span>
+            </div>
+            <div class="class-row">
+              <span class="class-label"><span class="badge-great">!</span> Great Moves</span>
+              <span id="count-great">4</span>
+            </div>
+            <div class="class-row">
+              <span class="class-label"><span class="badge-best">★</span> Best Moves</span>
+              <span id="count-best">12</span>
+            </div>
+            <div class="class-row">
+              <span class="class-label"><span class="badge-mistake">?!</span> Inaccuracies</span>
+              <span id="count-mistakes">2</span>
+            </div>
+            <div class="class-row">
+              <span class="class-label"><span class="badge-blunder">??</span> Blunders</span>
+              <span id="count-blunders">1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: FEN & PGN Share/Export -->
+      <div class="tab-content" id="tab-share">
+        <div class="fen-pgn-box">
+          <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Share Position</label>
+          <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+            <button class="btn-action" id="btn-copy-fen">📋 Copy FEN</button>
+            <button class="btn-action" id="btn-copy-pgn">📜 Copy PGN</button>
+            <button class="btn-action" id="btn-load-fen">📥 Paste & Load FEN</button>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Dragging Floating Ghost Piece -->
+  <div id="drag-piece-ghost"></div>
+
+  <!-- Game Over Modal Dialog -->
+  <div class="modal-backdrop" id="gameover-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Game Concluded</h3>
+        <button class="close-btn" id="close-gameover-modal">&times;</button>
+      </div>
+      <div class="game-over-banner">
+        <div class="game-over-title" id="game-over-title">Checkmate! White wins!</div>
+        <div class="game-over-desc" id="game-over-desc">Final score: 1-0</div>
+      </div>
+      <div class="game-over-actions">
+        <button class="btn-action btn-primary" style="flex: 1;" onclick="document.getElementById('gameover-modal').classList.remove('show'); window.chessApp.startNewGame();">Play Again 🔄</button>
+        <button class="btn-action" style="flex: 1;" onclick="document.getElementById('gameover-modal').classList.remove('show'); window.chessApp.switchMode('review');">Game Review 📊</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/sound.js"></script>
+  <script src="js/pieces.js"></script>
+  <script src="js/chess-engine.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/puzzles.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
