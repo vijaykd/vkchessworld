@@ -1,4 +1,30 @@
 // Master Chess Application Controller (VK Chess World)
+
+// Safe localStorage wrapper (works even in Safari Private mode / in-app browsers)
+function safeGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    if (!window.__vk_storage) window.__vk_storage = {};
+    return window.__vk_storage[key] || null;
+  }
+}
+function safeSetItem(key, val) {
+  try {
+    localStorage.setItem(key, val);
+  } catch (e) {
+    if (!window.__vk_storage) window.__vk_storage = {};
+    window.__vk_storage[key] = val;
+  }
+}
+function safeRemoveItem(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {
+    if (window.__vk_storage) delete window.__vk_storage[key];
+  }
+}
+
 class ChessApp {
   constructor() {
     this.engine = new ChessEngine();
@@ -92,6 +118,17 @@ class ChessApp {
     // Auth Tabs & Controls
     document.getElementById('tab-signup')?.addEventListener('click', () => this.setAuthMode('signup'));
     document.getElementById('tab-login')?.addEventListener('click', () => this.setAuthMode('login'));
+
+    // Step 1 Continue / Submit Click & Form Submit Listeners
+    document.getElementById('btn-auth-submit')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.handleStep1Submit();
+    });
+    document.getElementById('auth-form-step1')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.handleStep1Submit();
+    });
+
     document.getElementById('btn-logout')?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.logout();
@@ -119,12 +156,14 @@ class ChessApp {
     });
 
     // Skill Back & Finish Buttons
-    document.getElementById('btn-skill-back')?.addEventListener('click', () => {
+    document.getElementById('btn-skill-back')?.addEventListener('click', (e) => {
+      e.preventDefault();
       document.getElementById('auth-step-skill')?.classList.remove('active');
       document.getElementById('auth-step-credentials')?.classList.add('active');
     });
 
-    document.getElementById('btn-skill-finish')?.addEventListener('click', () => {
+    document.getElementById('btn-skill-finish')?.addEventListener('click', (e) => {
+      e.preventDefault();
       this.handleSkillFinish();
     });
 
@@ -290,7 +329,7 @@ class ChessApp {
 
   // Authentication & User Account System
   initAuth() {
-    const saved = localStorage.getItem('vk_chess_user');
+    const saved = safeGetItem('vk_chess_user');
     if (saved) {
       try {
         this.currentUser = JSON.parse(saved);
@@ -339,14 +378,22 @@ class ChessApp {
   }
 
   handleStep1Submit() {
-    const username = this.authUsernameEl.value.trim();
-    const password = this.authPasswordEl.value.trim();
+    const username = (this.authUsernameEl?.value || '').trim();
+    const password = (this.authPasswordEl?.value || '').trim();
 
-    if (!username || username.length < 2) {
+    if (!username) {
+      this.showAuthError('Please enter a username.');
+      return;
+    }
+    if (username.length < 2) {
       this.showAuthError('Username must be at least 2 characters long.');
       return;
     }
-    if (!password || password.length < 3) {
+    if (!password) {
+      this.showAuthError('Please enter a password.');
+      return;
+    }
+    if (password.length < 3) {
       this.showAuthError('Password must be at least 3 characters long.');
       return;
     }
@@ -354,7 +401,7 @@ class ChessApp {
     const key = 'vk_chess_acc_' + username.toLowerCase();
 
     if (this.authMode === 'signup') {
-      const existing = localStorage.getItem(key);
+      const existing = safeGetItem(key);
       if (existing) {
         this.showAuthError('Username already taken! Please choose another or Log In.');
         return;
@@ -368,18 +415,29 @@ class ChessApp {
       };
 
       this.authErrorEl.classList.remove('show');
-      document.getElementById('auth-step-credentials')?.classList.remove('active');
-      document.getElementById('auth-step-skill')?.classList.add('active');
+      const step1 = document.getElementById('auth-step-credentials');
+      const step2 = document.getElementById('auth-step-skill');
+      if (step1) step1.classList.remove('active');
+      if (step2) step2.classList.add('active');
+
+      const card = document.querySelector('.auth-card');
+      if (card) card.scrollTop = 0;
     } else {
       // Login mode
-      const existing = localStorage.getItem(key);
+      const existing = safeGetItem(key);
       if (!existing) {
         this.showAuthError('Account not found! Please create an account first.');
         return;
       }
 
-      const account = JSON.parse(existing);
-      if (account.password !== password) {
+      let account;
+      try {
+        account = JSON.parse(existing);
+      } catch (err) {
+        account = null;
+      }
+
+      if (!account || account.password !== password) {
         this.showAuthError('Incorrect password! Please try again.');
         return;
       }
@@ -391,7 +449,7 @@ class ChessApp {
         isProvisional: account.isProvisional !== false,
         gamesPlayed: account.gamesPlayed || 0
       };
-      localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+      safeSetItem('vk_chess_user', JSON.stringify(this.currentUser));
 
       this.authErrorEl.classList.remove('show');
       this.authModalEl.classList.remove('show');
@@ -424,7 +482,7 @@ class ChessApp {
     };
 
     const key = 'vk_chess_acc_' + accountData.username.toLowerCase();
-    localStorage.setItem(key, JSON.stringify(accountData));
+    safeSetItem(key, JSON.stringify(accountData));
 
     this.currentUser = {
       username: accountData.username,
@@ -433,7 +491,7 @@ class ChessApp {
       isProvisional: true,
       gamesPlayed: 0
     };
-    localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+    safeSetItem('vk_chess_user', JSON.stringify(this.currentUser));
 
     this.authModalEl.classList.remove('show');
     this.updateUserProfileUI();
@@ -458,15 +516,17 @@ class ChessApp {
       this.currentUser.isProvisional = false;
     }
 
-    localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+    safeSetItem('vk_chess_user', JSON.stringify(this.currentUser));
     const key = 'vk_chess_acc_' + this.currentUser.username.toLowerCase();
-    const accStr = localStorage.getItem(key);
+    const accStr = safeGetItem(key);
     if (accStr) {
-      const acc = JSON.parse(accStr);
-      acc.rating = this.currentUser.rating;
-      acc.gamesPlayed = this.currentUser.gamesPlayed;
-      acc.isProvisional = this.currentUser.isProvisional;
-      localStorage.setItem(key, JSON.stringify(acc));
+      try {
+        const acc = JSON.parse(accStr);
+        acc.rating = this.currentUser.rating;
+        acc.gamesPlayed = this.currentUser.gamesPlayed;
+        acc.isProvisional = this.currentUser.isProvisional;
+        safeSetItem(key, JSON.stringify(acc));
+      } catch (e) {}
     }
 
     this.updateUserProfileUI();
@@ -478,14 +538,16 @@ class ChessApp {
     if (!this.currentUser) return;
     const delta = success ? 12 : -6;
     this.currentUser.rating = Math.max(100, (this.currentUser.rating || 400) + delta);
-    localStorage.setItem('vk_chess_user', JSON.stringify(this.currentUser));
+    safeSetItem('vk_chess_user', JSON.stringify(this.currentUser));
 
     const key = 'vk_chess_acc_' + this.currentUser.username.toLowerCase();
-    const accStr = localStorage.getItem(key);
+    const accStr = safeGetItem(key);
     if (accStr) {
-      const acc = JSON.parse(accStr);
-      acc.rating = this.currentUser.rating;
-      localStorage.setItem(key, JSON.stringify(acc));
+      try {
+        const acc = JSON.parse(accStr);
+        acc.rating = this.currentUser.rating;
+        safeSetItem(key, JSON.stringify(acc));
+      } catch (e) {}
     }
 
     this.updateUserProfileUI();
@@ -506,7 +568,7 @@ class ChessApp {
   }
 
   logout() {
-    localStorage.removeItem('vk_chess_user');
+    safeRemoveItem('vk_chess_user');
     this.currentUser = null;
     this.showAuthModal(true);
   }

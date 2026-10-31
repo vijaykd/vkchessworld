@@ -353,17 +353,17 @@
           <button class="auth-tab-btn" id="tab-login" type="button">Log In</button>
         </div>
 
-        <form class="auth-form" id="auth-form-step1" onsubmit="event.preventDefault(); window.chessApp.handleStep1Submit();">
+        <form class="auth-form" id="auth-form-step1" novalidate>
           <!-- Username -->
           <div class="auth-input-group">
             <label for="auth-username">Username</label>
-            <input type="text" id="auth-username" class="auth-input" placeholder="e.g. GrandmasterViha" autocomplete="username" required minlength="2" maxlength="20">
+            <input type="text" id="auth-username" class="auth-input" placeholder="e.g. GrandmasterViha" autocomplete="username" maxlength="20">
           </div>
 
           <!-- Password -->
           <div class="auth-input-group">
             <label for="auth-password">Password</label>
-            <input type="password" id="auth-password" class="auth-input" placeholder="Enter your password" autocomplete="current-password" required minlength="3">
+            <input type="password" id="auth-password" class="auth-input" placeholder="Enter your password" autocomplete="current-password">
           </div>
 
           <!-- Avatar Selection (Signup only) -->
@@ -389,7 +389,7 @@
           <div class="auth-error" id="auth-error-msg"></div>
 
           <!-- Step 1 Action Button -->
-          <button type="submit" class="btn-auth-submit" id="btn-auth-submit">
+          <button type="button" class="btn-auth-submit" id="btn-auth-submit">
             <span>Continue</span> ➡️
           </button>
         </form>
