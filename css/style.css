@@ -1514,6 +1514,33 @@ body {
   display: block;
 }
 
+/* Remember Login & Password Checkbox */
+.auth-remember-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: -1px 0 2px 0;
+}
+
+.remember-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-white);
+  cursor: pointer;
+  user-select: none;
+}
+
+.remember-label input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent-green);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
 /* Submit Action Button */
 .btn-auth-submit {
   background: var(--accent-green);

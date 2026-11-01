@@ -329,6 +329,7 @@ class ChessApp {
 
   // Authentication & User Account System
   initAuth() {
+    // 1. Check if user is currently logged in
     const saved = safeGetItem('vk_chess_user');
     if (saved) {
       try {
@@ -336,6 +337,35 @@ class ChessApp {
         this.updateUserProfileUI();
       } catch (e) {
         this.currentUser = null;
+      }
+    }
+
+    // 2. If not currently logged in, check for saved credentials to auto-login
+    if (!this.currentUser) {
+      const savedCredsStr = safeGetItem('vk_saved_creds');
+      if (savedCredsStr) {
+        try {
+          const creds = JSON.parse(savedCredsStr);
+          if (creds && creds.username && creds.password) {
+            const accKey = 'vk_chess_acc_' + creds.username.toLowerCase();
+            const accStr = safeGetItem(accKey);
+            if (accStr) {
+              const account = JSON.parse(accStr);
+              if (account.password === creds.password) {
+                // Auto-login successful!
+                this.currentUser = {
+                  username: account.username,
+                  avatar: account.avatar || '👑',
+                  rating: account.rating || 400,
+                  isProvisional: account.isProvisional !== false,
+                  gamesPlayed: account.gamesPlayed || 0
+                };
+                safeSetItem('vk_chess_user', JSON.stringify(this.currentUser));
+                this.updateUserProfileUI();
+              }
+            }
+          }
+        } catch (e) {}
       }
     }
 
@@ -347,9 +377,30 @@ class ChessApp {
   showAuthModal(isMandatory = true) {
     this.authErrorEl.classList.remove('show');
     this.authErrorEl.textContent = '';
-    this.authUsernameEl.value = this.currentUser ? this.currentUser.username : '';
-    this.authPasswordEl.value = '';
-    this.setAuthMode('signup');
+
+    const savedCredsStr = safeGetItem('vk_saved_creds');
+    let savedCreds = null;
+    if (savedCredsStr) {
+      try { savedCreds = JSON.parse(savedCredsStr); } catch (e) {}
+    }
+
+    const rememberBox = document.getElementById('auth-remember');
+    if (rememberBox) rememberBox.checked = true;
+
+    if (savedCreds && savedCreds.username) {
+      this.authUsernameEl.value = savedCreds.username;
+      this.authPasswordEl.value = savedCreds.password || '';
+      this.setAuthMode('login');
+    } else if (this.currentUser) {
+      this.authUsernameEl.value = this.currentUser.username;
+      this.authPasswordEl.value = '';
+      this.setAuthMode('login');
+    } else {
+      this.authUsernameEl.value = '';
+      this.authPasswordEl.value = '';
+      this.setAuthMode('signup');
+    }
+
     this.authModalEl.classList.add('show');
   }
 
@@ -363,6 +414,20 @@ class ChessApp {
     document.getElementById('auth-step-credentials')?.classList.add('active');
     document.getElementById('auth-step-skill')?.classList.remove('active');
     this.authErrorEl.classList.remove('show');
+
+    // If switching to login mode, auto-fill saved credentials if available
+    if (mode === 'login') {
+      const savedCredsStr = safeGetItem('vk_saved_creds');
+      if (savedCredsStr) {
+        try {
+          const creds = JSON.parse(savedCredsStr);
+          if (creds.username) {
+            this.authUsernameEl.value = creds.username;
+            if (creds.password) this.authPasswordEl.value = creds.password;
+          }
+        } catch (e) {}
+      }
+    }
 
     if (mode === 'signup') {
       tabSignup?.classList.add('active');
@@ -442,6 +507,16 @@ class ChessApp {
         return;
       }
 
+      const rememberBox = document.getElementById('auth-remember');
+      const shouldRemember = rememberBox ? rememberBox.checked : true;
+      if (shouldRemember) {
+        safeSetItem('vk_saved_creds', JSON.stringify({
+          username: account.username,
+          password: account.password,
+          remember: true
+        }));
+      }
+
       this.currentUser = {
         username: account.username,
         avatar: account.avatar || '👑',
@@ -483,6 +558,16 @@ class ChessApp {
 
     const key = 'vk_chess_acc_' + accountData.username.toLowerCase();
     safeSetItem(key, JSON.stringify(accountData));
+
+    const rememberBox = document.getElementById('auth-remember');
+    const shouldRemember = rememberBox ? rememberBox.checked : true;
+    if (shouldRemember) {
+      safeSetItem('vk_saved_creds', JSON.stringify({
+        username: accountData.username,
+        password: accountData.password,
+        remember: true
+      }));
+    }
 
     this.currentUser = {
       username: accountData.username,

@@ -353,17 +353,25 @@
           <button class="auth-tab-btn" id="tab-login" type="button">Log In</button>
         </div>
 
-        <form class="auth-form" id="auth-form-step1" novalidate>
+        <form class="auth-form" id="auth-form-step1" novalidate autocomplete="on">
           <!-- Username -->
           <div class="auth-input-group">
             <label for="auth-username">Username</label>
-            <input type="text" id="auth-username" class="auth-input" placeholder="e.g. GrandmasterViha" autocomplete="username" maxlength="20">
+            <input type="text" id="auth-username" name="username" class="auth-input" placeholder="e.g. GrandmasterViha" autocomplete="username" maxlength="20">
           </div>
 
           <!-- Password -->
           <div class="auth-input-group">
             <label for="auth-password">Password</label>
-            <input type="password" id="auth-password" class="auth-input" placeholder="Enter your password" autocomplete="current-password">
+            <input type="password" id="auth-password" name="password" class="auth-input" placeholder="Enter your password" autocomplete="current-password">
+          </div>
+
+          <!-- Remember Me Checkbox -->
+          <div class="auth-remember-row">
+            <label class="remember-label" for="auth-remember">
+              <input type="checkbox" id="auth-remember" checked>
+              <span>Remember password & auto-login</span>
+            </label>
           </div>
 
           <!-- Avatar Selection (Signup only) -->
