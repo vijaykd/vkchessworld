@@ -73,6 +73,7 @@ class ChessApp {
     this.initDOM();
     this.bindEvents();
     this.initAuth();
+    this.updateBotPlayButton();
     this.startNewGame();
   }
 
@@ -224,7 +225,18 @@ class ChessApp {
         const botId = card.dataset.bot;
         this.selectedBot = CHESS_BOTS[botId];
         this.updatePlayerCards();
+        this.updateBotPlayButton();
       });
+
+      // Double-click or quick tap starts match immediately
+      card.addEventListener('dblclick', () => {
+        this.startBotGame();
+      });
+    });
+
+    // Start Match vs Coach Button
+    document.getElementById('btn-start-bot-game')?.addEventListener('click', () => {
+      this.startBotGame();
     });
 
     // Bot Color Selection
@@ -273,7 +285,10 @@ class ChessApp {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
 
-    if (mode === 'puzzles') {
+    if (mode === 'bot') {
+      this.switchSidebarTab('bots');
+      this.updateBotPlayButton();
+    } else if (mode === 'puzzles') {
       this.switchSidebarTab('puzzles');
       this.loadPuzzle(0);
     } else if (mode === 'review') {
@@ -295,6 +310,22 @@ class ChessApp {
     document.querySelectorAll('.tab-content').forEach(content => {
       content.classList.toggle('active', content.id === `tab-${tabId}`);
     });
+  }
+
+  startBotGame() {
+    this.mode = 'bot';
+    document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === 'bot');
+    });
+    this.startNewGame();
+    this.switchSidebarTab('moves');
+  }
+
+  updateBotPlayButton() {
+    const btn = document.getElementById('btn-start-bot-game');
+    if (btn && this.selectedBot) {
+      btn.innerHTML = `<span>▶️ Play Against ${this.selectedBot.name} (${this.selectedBot.rating})</span>`;
+    }
   }
 
   startNewGame() {
@@ -1275,12 +1306,33 @@ class ChessApp {
       this.statusSubtitleEl.textContent = `Result: ${status.result}`;
     } else {
       const turnName = this.engine.turn === 'w' ? 'White' : 'Black';
-      if (status.check) {
-        this.statusTitleEl.textContent = `Check! ${turnName} to move`;
-        this.statusSubtitleEl.textContent = `King under threat!`;
+      if (this.mode === 'bot' && this.selectedBot) {
+        const isUserTurn = (this.engine.turn === this.userColor);
+        if (isUserTurn) {
+          if (status.check) {
+            this.statusTitleEl.textContent = `⚠️ Check! Your turn (${turnName})`;
+            this.statusSubtitleEl.textContent = `Your King is under attack!`;
+          } else {
+            this.statusTitleEl.textContent = `Your turn (${turnName})`;
+            this.statusSubtitleEl.textContent = `vs ${this.selectedBot.name} (${this.selectedBot.rating})`;
+          }
+        } else {
+          if (status.check) {
+            this.statusTitleEl.textContent = `⚠️ Check! ${this.selectedBot.name} to move`;
+            this.statusSubtitleEl.textContent = `${this.selectedBot.avatar} ${this.selectedBot.name} is thinking...`;
+          } else {
+            this.statusTitleEl.textContent = `${this.selectedBot.avatar} ${this.selectedBot.name} is thinking...`;
+            this.statusSubtitleEl.textContent = `${turnName} to move (Rating ${this.selectedBot.rating})`;
+          }
+        }
       } else {
-        this.statusTitleEl.textContent = `${turnName} to move`;
-        this.statusSubtitleEl.textContent = `Move ${this.engine.fullmoveNumber}`;
+        if (status.check) {
+          this.statusTitleEl.textContent = `Check! ${turnName} to move`;
+          this.statusSubtitleEl.textContent = `King under threat!`;
+        } else {
+          this.statusTitleEl.textContent = `${turnName} to move`;
+          this.statusSubtitleEl.textContent = `Move ${this.engine.fullmoveNumber}`;
+        }
       }
     }
   }
